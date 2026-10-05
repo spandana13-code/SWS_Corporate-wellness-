@@ -3,11 +3,7 @@ import { CONFIG } from "./config.js";
 
 export const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export const lion = (s = 44) => `<svg class="lion" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true">
-  <g fill="#C9A84C">${Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6; return `<circle cx="${(24 + 15 * Math.cos(a)).toFixed(1)}" cy="${(24 + 15 * Math.sin(a)).toFixed(1)}" r="6.4"/>`; }).join("")}</g>
-  <circle cx="24" cy="24" r="13" fill="#E9CF85"/><circle cx="24" cy="25" r="10.5" fill="#F4E3B0"/>
-  <circle cx="19.8" cy="22.5" r="1.6" fill="#1A3C2E"/><circle cx="28.2" cy="22.5" r="1.6" fill="#1A3C2E"/>
-  <path d="M21.6 27.2h4.8l-2.4 2.6z" fill="#1A3C2E"/><path d="M24 29.8v1.6M21.5 32c1.4 1 3.6 1 5 0" stroke="#1A3C2E" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
+export const lion = (s = 44) => `<img class="lion" src="logo.png" width="${s}" height="${s}" alt="" style="border-radius:50%;object-fit:cover;flex:none">`;
 
 export const IC = {
   today: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
