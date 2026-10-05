@@ -142,7 +142,7 @@ async function demoLoad() {
   if (demoDb) return demoDb;
   try { demoDb = JSON.parse(localStorage.getItem(DEMO_KEY) || "null"); } catch (e) { demoDb = null; }
   if (demoDb) return demoDb;
-  const plan = await (await fetch(new URL("../plans/sample-plan.json", import.meta.url))).json();
+  const plan = await (await fetch(new URL("./sample-plan.json", import.meta.url))).json();
   const today = todayISO();
   const start = addDays(today, -16); // three weeks in
   const people = [

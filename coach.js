@@ -230,7 +230,7 @@ function viewUpload() {
       <label>Plan file<input class="inp" id="u-file" type="file" accept=".json,application/json"></label>
       <label class="full">…or paste the plan here<textarea class="inp" id="u-text" spellcheck="false" placeholder='{"format": "sws-plan/1", ...}'>${esc(U.text)}</textarea></label>
     </div>
-    <div class="btns" style="margin-top:12px"><button class="btn" id="u-check">Check plan</button><a class="link" href="plans/sample-plan.json" target="_blank" rel="noopener" style="align-self:center">See the sample plan file</a></div>
+    <div class="btns" style="margin-top:12px"><button class="btn" id="u-check">Check plan</button><a class="link" href="sample-plan.json" target="_blank" rel="noopener" style="align-self:center">See the sample plan file</a></div>
   </div>
   ${ck ? `<div class="card">
     ${ck.errors.length ? `<h2 style="color:var(--bad)">Fix these before saving</h2><ul class="list-errors">${ck.errors.map(e => `<li>${esc(e)}</li>`).join("")}</ul>` : `<h2>Plan looks good</h2>`}
