@@ -1,0 +1,43 @@
+/* Coach panel: wider desktop layout built on the same tokens as the employee site */
+.c-app{max-width:1120px;margin:0 auto;padding-bottom:48px}
+.c-top{background:var(--forest);color:var(--forest-ink);padding:14px 16px}
+.c-top-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.c-top h1{font-size:20px;font-weight:700}
+.c-top .sub{font-size:12.5px;opacity:.8}
+.c-tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.c-tabs button{background:transparent;border:1px solid rgba(255,255,255,.18);color:var(--forest-ink);border-radius:10px;padding:7px 12px;font-weight:600;font-size:13.5px;display:inline-flex;gap:6px;align-items:center}
+.c-tabs button svg{width:17px;height:17px}
+.c-tabs button.on{background:#C9A84C;border-color:#C9A84C;color:#1A2A20}
+.c-body{padding:18px 16px;display:flex;flex-direction:column;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi b{font-family:var(--font-display);font-size:26px;display:block;line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.ptbl{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+.ptbl th{text-align:left;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.ptbl td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl tr.click{cursor:pointer}
+.ptbl tr.click:hover td{background:var(--surface-2)}
+.ptbl .nm{font-weight:700}
+.ptbl .nm small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+.flag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;margin:1px 2px 1px 0;white-space:nowrap}
+.flag.bad{background:var(--bad-soft);color:var(--bad)}
+.flag.warn{background:var(--warn-soft);color:var(--warn)}
+.flag.ok{background:var(--good-soft);color:var(--good)}
+.flag.mute{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.form label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
+.form .full{grid-column:1/-1}
+textarea.inp{min-height:180px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.codebox{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:.06em;background:var(--gold-soft);border-radius:12px;padding:10px 14px;display:inline-block}
+.msgbox{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px;white-space:pre-line}
+.list-errors{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.list-errors li{margin:3px 0}
+.c-sheet .sheet{max-width:760px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.mini td,.mini th{font-size:13px;padding:7px 8px}
+.mini{min-width:640px}
+.login.coach{max-width:420px}
