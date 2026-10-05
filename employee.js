@@ -112,8 +112,8 @@ function render() {
   const tabs = { today: viewToday, workout: viewWorkout, checkin: viewCheckin, plan: viewPlan, me: viewMe };
   $("#root").innerHTML = `
     ${DEMO ? `<div class="demo-strip"><b>Demo mode</b> · sample data saved in this browser only</div>` : ""}
-    <div class="app">
-      ${header(c)}
+    <div class="app ${S.tab === "today" && !S.didAnim ? "anim" : ""}">
+      ${S.tab === "today" && c ? "" : header(c)}
       <div class="wrap">${c ? tabs[S.tab](c) : noPlan()}</div>
     </div>
     <a class="fab" href="${waLink(waMessage())}" target="_blank" rel="noopener">${IC.wa}Ask ${esc(CONFIG.COACH_NAME)}</a>
@@ -121,6 +121,8 @@ function render() {
       ${[["today", "Today"], ["workout", "Workout"], ["checkin", "Check-in"], ["plan", "My plan"], ["me", "Reminders"]].map(([k, l]) => `<button data-tab="${k}" class="${S.tab === k ? "on" : ""}" aria-current="${S.tab === k ? "page" : "false"}">${IC[k]}${l}</button>`).join("")}
     </nav>`;
   bind();
+  if (S.tab === "today") S.didAnim = true;
+  if (S.pop) setTimeout(() => { S.pop = null; }, 400);
 }
 function rerender() {
   const a = document.activeElement;
@@ -158,85 +160,120 @@ function dayChips(c) {
 }
 
 /* ---------------- Today ---------------- */
-function nextUp(c) {
+function rel(m) { if (m < 60) return m + " min"; const h = Math.floor(m / 60), r = m % 60; return h + " hr" + (r ? " " + r + " min" : ""); }
+const TICK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+
+function hero(c) {
+  const sum = consumed(), T = c.plan.targets, meals = P.mealsFor(c.plan, c.di);
+  const glasses = T.waterGlasses || 12, eaten = meals.filter(m => S.logs.meals[m.id]).length;
+  const h = new Date().getHours(), greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const C = 289.03, kcalPct = Math.min(1, sum[0] / T.kcal);
+  const pct = (v, max) => Math.min(100, Math.round(v / max * 100));
+  const total = Math.max(12, ...S.plans.map(p => (p.data.weeks || [0, 0])[1] || 0));
+  const streak = computeStreak();
+  return `<section class="hero rise">
+    <div class="hero-top">
+      <div style="min-width:0"><small>${isToday() ? "Today" : P.DAY_NAMES[c.di]} · Week ${Math.max(1, c.progWeek)} of ${total}</small><h1>${isToday() ? greet : P.DAY_NAMES[c.di]}, ${esc(firstName())}</h1></div>
+      <img class="logo" src="logo.png" alt="Strong With Sherni">
+    </div>
+    <div class="stats">
+      <div class="ring" role="img" aria-label="${sum[0]} of ${T.kcal} calories">
+        <svg viewBox="0 0 112 112"><circle class="trk" cx="56" cy="56" r="46" fill="none" stroke-width="11"/><circle class="val" cx="56" cy="56" r="46" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${(C * (1 - kcalPct)).toFixed(1)}"/></svg>
+        <div class="mid"><b class="num">${sum[0].toLocaleString("en-IN")}</b><span>of ${T.kcal.toLocaleString("en-IN")} kcal</span></div>
+      </div>
+      <div class="hbars">
+        <div><div class="hbl"><span>Protein</span><b class="num">${sum[1]}/${T.protein}g</b></div><div class="hbar p"><i style="width:${pct(sum[1], T.protein)}%"></i></div></div>
+        <div><div class="hbl"><span>Water</span><b class="num">${S.logs.water}/${glasses}</b></div><div class="hbar w"><i style="width:${pct(S.logs.water, glasses)}%"></i></div></div>
+        <div><div class="hbl"><span>Meals</span><b class="num">${eaten}/${meals.length}</b></div><div class="hbar m"><i style="width:${pct(eaten, meals.length)}%"></i></div></div>
+      </div>
+    </div>
+    <div class="hero-tags"><span>Phase ${c.plan.phase}${c.plan.phaseName ? " · " + esc(c.plan.phaseName) : ""}</span><span>${c.train ? esc(c.plan.workouts[c.train].title.split(" · ")[0]) + " day" : "Active recovery day"}</span>${c.veg ? "<span>Vegetarian day</span>" : ""}${streak ? `<span class="num">${streak}-day streak</span>` : ""}</div>
+  </section>`;
+}
+
+function nextCard(c) {
   if (!isToday()) return "";
   const now = P.nowMinutes(), meals = P.mealsFor(c.plan, c.di);
   const t = m => P.mealTime(c.plan, m, workStart());
   const missed = meals.filter(m => !m.optional && !S.logs.meals[m.id] && t(m) + 75 < now).pop();
-  const upcoming = meals.find(m => !S.logs.meals[m.id] && t(m) >= now - 30);
+  const up = meals.find(m => !S.logs.meals[m.id] && t(m) >= now - 30);
+  const ed = editable();
   let html = "";
   if (missed && missed.quick) {
-    html += `<div class="card next warn"><div class="eyebrow">Missed ${esc(missed.name.toLowerCase())}?</div>
-      <div class="t">Busy day happens. Here's your 2-minute backup.</div>
-      <div class="why">${esc(missed.quick.text)}</div>
-      <div class="btns" style="margin-top:10px"><button class="btn primary" data-backup="${esc(missed.id)}">I had the backup</button></div></div>`;
+    html += `<section class="card2 next2 warn rise d1"><div class="eb" style="color:var(--warn)">Missed ${esc(missed.name.toLowerCase())}?</div>
+      <div class="meal-t">Busy day happens. Here's a 2-minute backup.</div>
+      <div class="meta">${esc(missed.quick.text)}</div>
+      <div class="btns2"><button class="b2 primary" data-backup="${esc(missed.id)}" ${ed ? "" : "disabled"}>I had the backup</button></div></section>`;
   }
-  if (upcoming) {
-    const diff = t(upcoming) - now, it = itemOf(c, upcoming);
-    html += `<div class="card next"><div class="eyebrow">Next up</div>
-      <div class="t">${diff <= 0 ? esc(upcoming.name) + " time, right now" : diff <= 60 ? esc(upcoming.name) + " in " + rel(diff) : esc(upcoming.name) + " at " + P.fmtTime(t(upcoming))}</div>
-      <div class="why">${esc(it.text)}</div></div>`;
+  if (up) {
+    const diff = t(up) - now, it = itemOf(c, up);
+    const opts = P.mealOptions(c.plan, up, { di: c.di, basedOnProtein: basedOnProtein(c, up) });
+    const when = diff <= 0 ? "Now" : diff <= 60 ? "In " + rel(diff) : "At " + P.fmtTime(t(up));
+    const reason = P.smartReason(c.plan, up, { di: c.di, basedOnProtein: basedOnProtein(c, up) }, it.quick);
+    html += `<section class="card2 next2 rise d1">
+      <div class="row between"><div class="eb">${esc(up.name)} · ${P.fmtTime(t(up))}</div><div class="pill2">${when}</div></div>
+      <div class="meal-t">${esc(it.text)}</div>
+      <div class="meta num">${it.macros[0]} kcal · ${it.macros[1]} g protein${it.quick ? " · quick backup" : ""}</div>
+      ${reason ? `<div class="meta" style="font-style:italic">${esc(reason)}</div>` : ""}
+      <div class="btns2"><button class="b2 primary" data-tick="${esc(up.id)}" ${ed ? "" : "disabled"}>Mark as eaten</button><button class="b2 ghost" data-swap="${esc(up.id)}" ${it.quick || opts.length < 2 ? "disabled" : ""}>Swap</button></div>
+    </section>`;
   } else if (!missed) {
-    html += `<div class="card next done"><div class="eyebrow">Day complete</div><div class="t">Every meal logged. That's what consistency looks like.</div></div>`;
+    html += `<section class="card2 next2 done rise d1"><div class="eb" style="color:var(--good)">Day complete</div><div class="meal-t">Every meal logged. That's what consistency looks like.</div></section>`;
   }
   const target = c.plan.targets.waterGlasses || 12;
   const expected = Math.max(0, Math.min(target, Math.round(target * (now - (P.hm(workStart()) - 90)) / 840)));
-  if (expected - S.logs.water >= 3) html += `<div class="card" style="padding:10px 14px"><div class="row between"><span class="small"><b>Water check:</b> you're at ${S.logs.water} of about ${expected} glasses for this time of day.</span><button class="btn" data-water-add ${editable() ? "" : "disabled"}>+1 glass</button></div></div>`;
+  if (expected - S.logs.water >= 3) html += `<section class="card" style="padding:10px 14px"><div class="row between"><span class="small"><b>Water check:</b> you're at ${S.logs.water} of about ${expected} glasses for this time of day.</span><button class="btn" data-water-add ${ed ? "" : "disabled"}>+1 glass</button></div></section>`;
   return html;
 }
-function rel(m) { if (m < 60) return m + " min"; const h = Math.floor(m / 60), r = m % 60; return h + " hr" + (r ? " " + r + " min" : ""); }
 
-function viewToday(c) {
-  const sum = consumed(), T = c.plan.targets, meals = P.mealsFor(c.plan, c.di), crazy = crazyOn();
-  const now = P.nowMinutes();
+function mealList(c) {
+  const meals = P.mealsFor(c.plan, c.di), now = P.nowMinutes(), ed = editable();
   const nowMeal = isToday() ? meals.find(m => !S.logs.meals[m.id] && P.mealTime(c.plan, m, workStart()) >= now - 30) : null;
-  const bars = [["Calories", sum[0], T.kcal, "", ""], ["Protein", sum[1], T.protein, "g", "p"], ["Carbs", sum[2], T.carbs, "g", ""], ["Fibre", sum[4], T.fibre, "g", ""]];
-  const ed = editable();
-  const glasses = c.plan.targets.waterGlasses || 12;
-  return `
-  ${dayChips(c)}
-  ${nextUp(c)}
-  ${c.plan.coachNote ? `<section class="card note"><div class="row">${lion(30)}<div class="eyebrow">Note from Sherni</div></div><p>${esc(c.plan.coachNote)}</p></section>` : ""}
-  <section class="card">
-    <div class="row between"><h2>${isToday() ? "Today's" : P.DAY_KEYS[c.di] + "'s"} fuel</h2><span class="small muted num">${meals.filter(m => S.logs.meals[m.id]).length}/${meals.length} meals logged</span></div>
-    <div class="macros">${bars.map(([l, v, max, u, cls]) => `<div><div class="bar-l"><span>${l}</span><span class="num"><b>${v}</b>/${max}${u}</span></div><div class="bar ${cls}"><i style="width:${Math.min(100, Math.round(v / max * 100))}%"></i></div></div>`).join("")}</div>
-  </section>
-  <section class="card toggle">
-    <div><b>Crazy day?</b><div class="small muted">Back-to-back meetings or a deadline. Switches every meal to a quick backup that still hits your protein.</div></div>
-    <button class="sw" role="switch" aria-checked="${crazy}" aria-label="Crazy day mode" id="crazy" ${S.view > S.today || !ed ? "disabled" : ""}></button>
-  </section>
-  <section class="tl" aria-label="Meal timeline">
+  return `<section class="card2 mlist rise d2" aria-label="Meals">
+    <h2>${isToday() ? "Today's meals" : P.DAY_NAMES[c.di] + "'s meals"}</h2>
     ${meals.map(m => {
       const it = itemOf(c, m), done = !!S.logs.meals[m.id];
       const opts = P.mealOptions(c.plan, m, { di: c.di, basedOnProtein: basedOnProtein(c, m) });
       const tags = [];
-      if (it.quick) tags.push('<span class="tag warn">Quick backup</span>');
-      else if (c.veg && (m.veg || (m.smart && m.smart.proteinVeg))) tags.push(`<span class="tag teal">${P.DAY_NAMES[c.di]} veg</span>`);
-      if (m.trainingOnly) tags.push('<span class="tag gold">Training day</span>');
+      if (it.quick) tags.push('<span class="tag warn">Quick</span>');
+      else if (c.veg && (m.veg || (m.smart && m.smart.proteinVeg))) tags.push('<span class="tag teal">Veg</span>');
+      if (m.trainingOnly) tags.push('<span class="tag gold">Training</span>');
       if (m.optional) tags.push('<span class="tag">Optional</span>');
       if (!it.quick && it.index > 0) tags.push('<span class="tag">Swapped</span>');
-      const reason = P.smartReason(c.plan, m, { di: c.di, basedOnProtein: basedOnProtein(c, m) }, it.quick);
-      return `<article class="meal ${done ? "isdone" : ""} ${nowMeal === m ? "isnow" : ""}">
-        <div class="tcol"><div class="tm num">${P.fmtTime(P.mealTime(c.plan, m, workStart())).replace(" ", "&nbsp;")}</div><div class="dotm"></div></div>
-        <div class="mcard">
-          <div class="mname">${esc(m.name)}</div>
-          <div class="mitem">${esc(it.text)}</div>
-          ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}
-          ${reason ? `<div class="reason">${esc(reason)}</div>` : ""}
-          <div class="mac num"><span><b>${it.macros[0]}</b> kcal</span><span><b>${it.macros[1]}g</b> protein</span><span><b>${it.macros[2]}g</b> carbs</span><span><b>${it.macros[3]}g</b> fat</span></div>
-          <div class="btns">
-            <button class="btn ${done ? "done" : "primary"}" data-tick="${esc(m.id)}" ${ed ? "" : "disabled"}>${done ? "✓ Done" : "Mark as eaten"}</button>
-            <button class="btn" data-swap="${esc(m.id)}" ${it.quick || done ? "disabled" : ""}>Swap · ${it.quick ? 1 : it.index + 1}/${it.quick ? 1 : opts.length}</button>
-          </div>
-        </div></article>`;
+      const reason = m === nowMeal ? null : P.smartReason(c.plan, m, { di: c.di, basedOnProtein: basedOnProtein(c, m) }, it.quick);
+      return `<div class="mrow ${done ? "done" : ""} ${m === nowMeal ? "now" : ""} ${S.pop === m.id ? "pop" : ""}">
+        <button class="tick2" data-tick="${esc(m.id)}" aria-label="${done ? "Undo " : "Mark "}${esc(m.name)}${done ? "" : " as eaten"}" aria-pressed="${done}" ${ed ? "" : "disabled"}>${TICK}</button>
+        <div class="mb">
+          <div class="mn">${esc(m.name)} ${tags.join("")}</div>
+          <div class="mi">${esc(it.text)}</div>
+          ${reason ? `<div class="mr">${esc(reason)}</div>` : ""}
+          ${!done && !it.quick && opts.length > 1 && m !== nowMeal ? `<button class="swaplink" data-swap="${esc(m.id)}">Swap (${it.index + 1} of ${opts.length})</button>` : ""}
+        </div>
+        <div class="mt num"><b>${P.fmtTime(P.mealTime(c.plan, m, workStart()))}</b><span>${it.macros[0]} kcal</span></div>
+      </div>`;
     }).join("")}
-  </section>
-  <section class="card">
-    <div class="row between"><h2>Water</h2><span class="num small"><b>${(S.logs.water * 250).toLocaleString("en-IN")} ml</b> / ${(glasses * 250).toLocaleString("en-IN")} ml</span></div>
+  </section>`;
+}
+
+function viewToday(c) {
+  const crazy = crazyOn(), ed = editable();
+  const glasses = c.plan.targets.waterGlasses || 12;
+  return `
+  ${hero(c)}
+  ${dayChips(c)}
+  ${nextCard(c)}
+  ${mealList(c)}
+  <section class="card2 rise d3" style="padding:16px">
+    <div class="row between"><h2 style="font-size:17px">Water</h2><span class="num small"><b>${(S.logs.water * 250).toLocaleString("en-IN")} ml</b> / ${(glasses * 250).toLocaleString("en-IN")} ml</span></div>
     <div class="glasses">${Array.from({ length: glasses }, (_, i) => `<button class="glass ${i < S.logs.water ? "full" : ""}" data-glass="${i}" aria-label="Glass ${i + 1}" ${ed ? "" : "disabled"}></button>`).join("")}</div>
-    <p class="small muted" style="margin:10px 0 0">Tap a glass to log 250 ml. Sip between meals, not with them.</p>
+    <p class="small muted" style="margin:10px 0 0">Tap a glass to log 250 ml.</p>
   </section>
-  ${(c.plan.snacks || []).length ? `<section class="card"><div class="row between"><h2>Hungry between meals?</h2><button class="btn" id="hungry">Show my snacks</button></div></section>` : ""}
+  <section class="card2 toggle rise d3" style="padding:16px">
+    <div><b>Crazy day?</b><div class="small muted">Back-to-back meetings or a deadline. Switches meals to quick backups that still hit your protein.</div></div>
+    <button class="sw" role="switch" aria-checked="${crazy}" aria-label="Crazy day mode" id="crazy" ${S.view > S.today || !ed ? "disabled" : ""}></button>
+  </section>
+  ${c.plan.coachNote ? `<section class="card note rise d4"><div class="row">${lion(30)}<div class="eyebrow">Note from Sherni</div></div><p>${esc(c.plan.coachNote)}</p></section>` : ""}
+  ${(c.plan.snacks || []).length ? `<section class="card2 rise d4" style="padding:16px"><div class="row between"><h2 style="font-size:17px">Hungry between meals?</h2><button class="btn" id="hungry">Show my snacks</button></div></section>` : ""}
   ${checkerCard(c)}`;
 }
 function checkerCard(c) {
@@ -422,7 +459,7 @@ async function guarded(fn, undo) {
 }
 function bind() {
   const c = ctxFor(S.view);
-  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; local.set("tab", S.tab); render(); window.scrollTo(0, 0); if (S.tab === "checkin") loadExtras(); });
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.tab === "today" && S.tab !== "today") S.didAnim = false; S.tab = b.dataset.tab; local.set("tab", S.tab); render(); window.scrollTo(0, 0); if (S.tab === "checkin") loadExtras(); });
   document.querySelectorAll("[data-day]").forEach(b => b.onclick = async () => { S.view = b.dataset.day; await loadDay(); rerender(); });
   const lo = $("#logout"); if (lo) lo.onclick = async () => { await api.logout(); S.me = null; renderLogin(); };
   if (!c) return;
@@ -435,6 +472,7 @@ function bind() {
       guarded(() => api.setMeal(S.me.id, S.view, m.id, null), () => S.logs.meals[m.id] = prev);
     } else {
       const it = itemOf(c, m);
+      S.pop = m.id;
       const entry = { option_index: it.index, quick: it.quick, item: it.text, kcal: it.macros[0], protein: it.macros[1], carbs: it.macros[2], fat: it.macros[3], fibre: it.macros[4] };
       S.logs.meals[m.id] = { meal_id: m.id, ...entry }; rerender();
       guarded(() => api.setMeal(S.me.id, S.view, m.id, entry), () => delete S.logs.meals[m.id]);
